@@ -1,5 +1,4 @@
 {
-"src_dirs":["/var/lib/deluged/Completed"],
 "src_dirs":["/var/lib/deluged/Downloads"],
 "dest_dirs":{
         "TV": {"dir": "/mnt/usb/TV", "org": "series", "file_type": "video", "db": "tv_db"},

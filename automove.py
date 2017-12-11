@@ -2,6 +2,7 @@
 import os
 import magic
 import importlib
+import json
 mime = magic.Magic(mime=True)
 
 
@@ -9,15 +10,26 @@ class IAutoDB(object):
     def __init__(self, conf):
         self.conf = conf
 
+class Config:
+    def __init__(self, conf_file):
+        with open(conf_file) as f:
+            j = json.load(f)
+
+        self.src_dirs = j["src_dirs"]
+        self.dest_dirs = j["dest_dirs"]
+        self.dbs = j["dbs"]
+
+
 class Automove:
     def __init__(self, conf_file):
-        self.conf = load_config(conf_file)
+        self.conf = Config(conf_file)
+        self.dbs = {}
         self._load_dbs()
 
     def run(self):
         res = []
-        for d in src_dirs:
-            res.extend(scan_src(d))
+        for d in self.conf.src_dirs:
+            res.extend(self.scan_src(d))
         return res
 
     def scan_src(self, src):
@@ -33,7 +45,7 @@ class Automove:
     def ftype_match(self, fname):
         matches = []
         for d in self.conf.dest_dirs:
-            if self.dest_dirs[d]['file_type'] in self.get_file_type(fname):
+            if self.conf.dest_dirs[d]['file_type'] in self.get_file_type(fname):
                 matches.append(d)
         return matches
 
@@ -52,4 +64,8 @@ class Automove:
         if dbs[db]:
             pass
 
+
+if __name__ == "__main__":
+    am = Automove("conf.json")
+    print(am.run())
 
