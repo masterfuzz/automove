@@ -7,7 +7,8 @@ mime = magic.Magic(mime=True)
 
 
 class IAutoDB(object):
-    def __init__(self, conf):
+    def __init__(self, conf, dest=None):
+        self.dest = dest
         self.conf = conf
 
 class Config:
@@ -30,6 +31,11 @@ class Automove:
         res = []
         for d in self.conf.src_dirs:
             res.extend(self.scan_src(d))
+
+        for mfile in res:
+            for t in mfile.ftypes:
+                mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile.fname)
+
         return res
 
     def scan_src(self, src):
@@ -37,7 +43,7 @@ class Automove:
         for (dirpath, dirnames, filenames) in os.walk(src):
             flist.extend(map(lambda x: os.path.join(dirpath,x), filenames))
 
-        return [(f, self.ftype_match(f)) for f in flist]
+        return [MediaFile(f, ftypes=self.ftype_match(f)) for f in flist]
 
     def get_file_type(self, fname):
         return magic.from_file(fname).lower() + " " + mime.from_file(fname).lower()
@@ -50,19 +56,31 @@ class Automove:
         return matches
 
     def _load_dbs(self):
-        for dlist in self.conf.dbs:
+        for dest in self.conf.dest_dirs:
             loaded_dbs = []
+            dlist = self.conf.dest_dirs[dest]['db']
             for db in self.conf.dbs[dlist]:
                 try:
                     mod = importlib.import_module(db)
-                    loaded_dbs.append(mod.AutoDB(self.conf))
+                    loaded_dbs.append(mod.AutoDB(self.conf, dest))
                 except Exception as e:
                     print(e)
             self.dbs[dlist] = loaded_dbs
 
-    def db_matches(self, db, fname):
-        if dbs[db]:
-            pass
+    def get_tags(self, db, fname):
+        tags = []
+        if self.dbs[db]:
+            for d in self.dbs[db]:
+                tags.append(d.search(fname))
+        return tags
+
+
+
+class MediaFile:
+    def __init__(self, fname, ftypes=None, tags=None):
+        self.fname = fname
+        self.ftypes = ftypes if ftypes else []
+        self.tags = tags if tags else []
 
 
 if __name__ == "__main__":
