@@ -35,21 +35,30 @@ class AutoDB(automove.IAutoDB):
             return None
         ret = {x: {} for x in self.tags}
         tokens = self.tokenize(fname)
+        print("tokens: {}".format(tokens))
         for tag in self.tags:
             for name in self.db[tag]:
                 score = 0
                 for t in tokens:
                     if t in name.lower():
+                        #print("hit {}".format(t))
                         score += 1
                 if score > 0:
+                    print("HITx{} {}/{}".format(score, tag, name))
                     ret[tag][name] = score
         return ret
 
     def tokenize(self, name):
-        return re.split('[^a-zA-Z]', name.lower())
+        return [t for t in re.split('[^a-zA-Z0-9]', name.lower()) if t]
+
+    def __str__(self):
+        if self.dest:
+            return "LocalDB<{}>".format(self.dest)
+        else:
+            return "LocalDB<NULL>"
 
 
 
-#ldb = AutoDB(automove.Config("conf.yaml"), dest='TV')
+ldb = AutoDB(automove.Config("conf.yaml"), dest='TV')
 #mdb = AutoDB(automove.Config("conf.yaml"), dest='MUSIC')
 
