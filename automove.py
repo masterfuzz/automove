@@ -10,6 +10,8 @@ class IAutoDB(object):
     def __init__(self, conf, dest=None):
         self.dest = dest
         self.conf = conf
+    def __str__(self):
+        return "AutoDB"
 
 class Config:
     def __init__(self, conf_file):
@@ -34,6 +36,7 @@ class Automove:
 
         for mfile in res:
             for t in mfile.ftypes:
+                print("Getting tags for {} as {}".format(mfile, t))
                 mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile.fname)
 
         return res
@@ -67,10 +70,11 @@ class Automove:
                     print(e)
             self.dbs[dlist] = loaded_dbs
 
-    def get_tags(self, db, fname):
+    def get_tags(self, ftype, fname):
         tags = []
-        if self.dbs[db]:
-            for d in self.dbs[db]:
+        if self.dbs[ftype]:
+            for d in self.dbs[ftype]:
+                print("\tSearching db {}".format(d))
                 tags.append(d.search(fname))
         return tags
 
@@ -78,9 +82,12 @@ class Automove:
 
 class MediaFile:
     def __init__(self, fname, ftypes=None, tags=None):
-        self.fname = fname
+        self.path, self.fname = os.path.split(fname)
         self.ftypes = ftypes if ftypes else []
         self.tags = tags if tags else []
+
+    def __str__(self):
+        return self.fname
 
 
 if __name__ == "__main__":
