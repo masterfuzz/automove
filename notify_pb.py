@@ -18,14 +18,15 @@ class AutoNotify(automove.IAutoNotify):
         self.pb = pushbullet.PushBullet(self.key, proxy=self.params.get('proxy',None))
 
     def send(self, body, title=None):
-        print("[{}] send(body='{}', title='{}'".format(self, body, title))
+        super(AutoNotify, self).send(body, title)
+
         if title:
             self.pb.push_note(title, body)
         else:
             self.pb.push_note("Automove", body)
 
     def __str__(self):
-        return "AutoNotify<PB>"
+        return "AutoNotify<PushBullet>"
 
 
 #pb = AutoNotify(automove.Config("conf.yaml"))

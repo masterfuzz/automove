@@ -10,7 +10,7 @@ class AutoDB(automove.IAutoDB):
         if dest:
             org = conf.dest_dirs[dest]['org']
             if org:
-                path = conf.dest_dirs[dest]['dir']
+                path = conf.dest_dirs[dest]['path']
                 self.tags = org.split('/')
                 self.db = {}
                 for t in self.tags:
@@ -21,21 +21,21 @@ class AutoDB(automove.IAutoDB):
     def load_tags(self, path, tags):
         if not tags:
             return
-        print("Loading {}".format(path))
+        self.log("Loading {}".format(path))
 
         for x in os.listdir(path):
             if os.path.isdir(os.path.join(path,x)):
-                print("[{}] add {}".format(tags[0], x))
+                self.log("added {}: '{}'".format(tags[0], x))
                 self.db[tags[0]].append(x)
                 self.load_tags(os.path.join(path, x), tags[1:])
 
     def search(self, fname):
         if not self.tags:
-            print("no tags so no results")
+            self.log("no tags so no results")
             return None
         ret = {x: {} for x in self.tags}
         tokens = self.tokenize(fname)
-        print("tokens: {}".format(tokens))
+        self.log("tokens: {}".format(tokens))
         for tag in self.tags:
             for name in self.db[tag]:
                 score = 0
@@ -44,7 +44,7 @@ class AutoDB(automove.IAutoDB):
                         #print("hit {}".format(t))
                         score += 1
                 if score > 0:
-                    print("HITx{} {}/{}".format(score, tag, name))
+                    self.log("HITx{} {}/{}".format(score, tag, name))
                     ret[tag][name] = score
         return ret
 
@@ -59,6 +59,6 @@ class AutoDB(automove.IAutoDB):
 
 
 
-ldb = AutoDB(automove.Config("conf.yaml"), dest='TV')
+#ldb = AutoDB(automove.Config("conf.yaml"), dest='TV')
 #mdb = AutoDB(automove.Config("conf.yaml"), dest='MUSIC')
 

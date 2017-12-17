@@ -12,11 +12,21 @@ class IAutoDB(object):
         self.conf = conf
     def __str__(self):
         return "AutoDB"
+    def log(self, message, level=0):
+        print("[{}] {}".format(self, message))
 
 class IAutoNotify(object):
     def __init__(self, conf, params=None):
         self.conf = conf
         self.params = conf.note.get('module parameters', {})
+
+    def send(self, body, title=None):
+        self.log("send(body='{}', title='{}'".format(self, body, title))
+
+    def __str__(self):
+        return "IAutoNotify<stdout>"
+    def log(self, message, level=0):
+        print("[{}] {}".format(self, message))
 
 
 class Config:
@@ -35,15 +45,27 @@ class Automove:
         self.conf = Config(conf_file)
         self.dbs = {}
         self._load_dbs()
+        self._load_notifier()
+        self.matches = []
 
     def run(self):
+        self.matches = self._run()
+        self.move(self.matches)
+
+    def log(self, message, part=None, level=0):
+        if part:
+            print("[main.{}] {}".format(part, message))
+        else:
+            print("[main] {}".format(message))
+
+    def _run(self):
         res = []
         for d in self.conf.src_dirs:
             res.extend(self.scan_src(d))
 
         for mfile in res:
             for t in mfile.ftypes:
-                print("Getting tags for {} as {}".format(mfile, t))
+                self.log("Getting tags for {} as {}".format(mfile, t))
                 mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile.fname)
 
         return res
@@ -61,7 +83,7 @@ class Automove:
     def ftype_match(self, fname):
         matches = []
         for d in self.conf.dest_dirs:
-            if self.conf.dest_dirs[d]['file_type'] in self.get_file_type(fname):
+            if self.conf.dest_dirs[d]['file type'] in self.get_file_type(fname):
                 matches.append(d)
         return matches
 
@@ -73,17 +95,49 @@ class Automove:
                 try:
                     mod = importlib.import_module(db)
                     loaded_dbs.append(mod.AutoDB(self.conf, dest))
+                    self.log("Database plugin '{}' loaded".format(loaded_dbs[-1]), part="plugins")
                 except Exception as e:
-                    print(e)
+                    self.log(e)
+                    raise e
             self.dbs[dlist] = loaded_dbs
+
+    def _load_notifier(self):
+        if self.conf.note and self.conf.note.get('module'):
+            try:
+                mod = importlib.import_module(self.conf.note['module'])
+                self.note = mod.AutoNotify(self.conf)
+            except Exception as e:
+                self.log(e)
+                raise e
+        else:
+            self.note = IAutoNotify(self.conf)
+        self.log("Notifier plugin '{}' loaded".format(self.note), part="plugins")
+
 
     def get_tags(self, ftype, fname):
         tags = []
         if self.dbs[ftype]:
             for d in self.dbs[ftype]:
-                print("\tSearching db {}".format(d))
+                self.log("\tSearching db {}".format(d))
                 tags.append(d.search(fname))
         return tags
+
+    def move(self, matches):
+        for mfile in matches:
+            if mfile.tags:
+                self.log("{} has tags".format(mfile), part="move")
+
+            else:
+                if self.conf.note.get('when no tags', False):
+                    self.note.send("No tags for {}".format(mfile))
+
+    def get_dest(self, mfile):
+        ftype = mfile.ftypes[0]
+        org_tags = self.conf.dest_dirs[ftype]['org'].split('/')
+        path = self.conf.dest_dirs[ftype]['path']
+
+
+
 
 
 
@@ -99,5 +153,5 @@ class MediaFile:
 
 if __name__ == "__main__":
     am = Automove("conf.yaml")
-    res = am.run()
+    am.run()
 

@@ -4,18 +4,18 @@ Sources:
 Destinations:
   MOVIES:
     db:  movie_db
-    dir:  /mnt/usb/Videos
-    file_type:  video
+    path:  /mnt/usb/Videos
+    file type:  video
     org: null
   MUSIC:
     db:  music_db
-    dir:  /mnt/usb/Music
-    file_type:  audio
+    path:  /mnt/usb/Music
+    file type:  audio
     org:  artist/album
   TV:
     db:  tv_db
-    dir:  /mnt/usb/TV
-    file_type:  video
+    path:  /mnt/usb/TV
+    file type:  video
     org:  series
 
 Databases:
@@ -26,7 +26,8 @@ Databases:
     - local_db
 
 Notifications:
-  module: notify_pb
+  when no tags: true
+  # module: notify_pb
   module parameters:
     keyring user: ["pushbullet", "cli"]
 
