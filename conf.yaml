@@ -1,0 +1,25 @@
+Sources:
+-  /var/lib/deluged/Completed
+
+Destinations:
+  MOVIES:
+    db:  movie_db
+    dir:  /mnt/usb/Videos
+    file_type:  video
+    org: null
+  MUSIC:
+    db:  music_db
+    dir:  /mnt/usb/Music
+    file_type:  audio
+    org:  artist/album
+  TV:
+    db:  tv_db
+    dir:  /mnt/usb/TV
+    file_type:  video
+    org:  series
+
+Databases:
+  movie_db: []
+  music_db:
+    - music_db
+  tv_db: []

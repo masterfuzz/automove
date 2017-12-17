@@ -2,7 +2,7 @@
 import os
 import magic
 import importlib
-import json
+import yaml
 mime = magic.Magic(mime=True)
 
 
@@ -14,11 +14,11 @@ class IAutoDB(object):
 class Config:
     def __init__(self, conf_file):
         with open(conf_file) as f:
-            j = json.load(f)
+            y = yaml.load(f)
 
-        self.src_dirs = j["src_dirs"]
-        self.dest_dirs = j["dest_dirs"]
-        self.dbs = j["dbs"]
+        self.src_dirs = y["Sources"]
+        self.dest_dirs = y["Destinations"]
+        self.dbs = y["Databases"]
 
 
 class Automove:
@@ -84,6 +84,6 @@ class MediaFile:
 
 
 if __name__ == "__main__":
-    am = Automove("conf.json")
+    am = Automove("conf.yaml")
     print(am.run())
 
