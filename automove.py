@@ -85,5 +85,5 @@ class MediaFile:
 
 if __name__ == "__main__":
     am = Automove("conf.yaml")
-    print(am.run())
+    res = am.run()
 

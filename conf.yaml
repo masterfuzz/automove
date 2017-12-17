@@ -22,4 +22,5 @@ Databases:
   movie_db: []
   music_db:
     - music_db
-  tv_db: []
+  tv_db:
+    - local_db
