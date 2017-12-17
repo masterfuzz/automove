@@ -24,3 +24,12 @@ Databases:
     - music_db
   tv_db:
     - local_db
+
+Notifications:
+  module: notify_pb
+  module parameters:
+    keyring user: ["pushbullet", "cli"]
+
+Queue:
+  path: ./queue.pic
+  module: pickle

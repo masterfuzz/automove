@@ -13,6 +13,12 @@ class IAutoDB(object):
     def __str__(self):
         return "AutoDB"
 
+class IAutoNotify(object):
+    def __init__(self, conf, params=None):
+        self.conf = conf
+        self.params = conf.note.get('module parameters', {})
+
+
 class Config:
     def __init__(self, conf_file):
         with open(conf_file) as f:
@@ -21,6 +27,7 @@ class Config:
         self.src_dirs = y["Sources"]
         self.dest_dirs = y["Destinations"]
         self.dbs = y["Databases"]
+        self.note = y["Notifications"]
 
 
 class Automove:
