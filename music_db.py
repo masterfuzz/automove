@@ -15,7 +15,7 @@ class AutoDB(automove.IAutoDB):
             # no id3 i guess
             print(e)
 
-        return {'artist': artist, 'album': album, 'title': title}
+        return [{'artist': {artist: 1}}, {'album': {album: 1}}, {'title': {title: 1}}]
 
 
 

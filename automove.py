@@ -16,13 +16,39 @@ class IAutoDB(object):
     def log(self, message, level=0):
         print("[{}] {}".format(self, message))
 
+class IAutoVerify(object):
+    def __init__(self, conf):
+        self.conf = conf
+    
+    def verify(self, a, b):
+        if os.path.getsize(a) != os.path.getsize(b):
+            return False
+        if os.system("cmp '{}' '{}'".format(a,b)) != 0:
+            return False
+        return True
+
+
 class IAutoNotify(object):
-    def __init__(self, conf, params=None):
+    def __init__(self, conf):
         self.conf = conf
         self.params = conf.note.get('module parameters', {})
+        self.message = []
 
     def send(self, body, title=None):
         self.log("send(body='{}', title='{}'".format(self, body, title))
+
+    def send_all(self, title=None):
+        if self.message:
+            if self.conf.note.get('summary', True):
+                self.send("\n".join(self.message), title=title)
+            else:
+                for m in self.message:
+                    self.send(m, title=title)
+        else:
+            self.log("send_all: empty message")
+
+    def add(self, message):
+        self.message.append(message)
 
     def __str__(self):
         return "IAutoNotify<stdout>"
@@ -35,6 +61,7 @@ class Config:
         with open(conf_file) as f:
             y = yaml.load(f)
 
+        self.raw_conf = y
         self.src_dirs = y["Sources"]
         self.dest_dirs = y["Destinations"]
         self.dbs = y["Databases"]
@@ -42,9 +69,13 @@ class Config:
         if 'Transfer' in y:
             self.overwrite = y['Transfer'].get('overwrite', False)
             self.delete = y['Transfer'].get('delete', False)
+            self.dry_run = y['Transfer'].get('dry run', False)
+            self.verify = y['Transfer'].get('verify', False)
         else:
             self.overwrite = False
             self.delete = False
+            self.dry_run = False
+            self.verify = False
 
 
 class Automove:
@@ -53,6 +84,7 @@ class Automove:
         self.dbs = {}
         self._load_dbs()
         self._load_notifier()
+        self._load_verifier()
         self.matches = []
 
     def run(self):
@@ -62,6 +94,7 @@ class Automove:
         self.log("Starting move")
         self.move(self.matches)
         self.log("Move completed")
+        self.note.send_all("Automove")
 
     def log(self, message, part=None, level=0):
         if part:
@@ -100,6 +133,13 @@ class Automove:
             if self.conf.dest_dirs[d]['file type'] in self.get_file_type(fname):
                 matches.append(d)
         return matches
+
+    def _load_verifier(self):
+        # only one verifier supported right now (do we really need others?)
+        if self.conf.verify:
+            self.verifier = IAutoVerify(self.conf)
+        else:
+            self.verifier = None
 
     def _load_dbs(self):
         for dest in self.conf.dest_dirs:
@@ -144,10 +184,12 @@ class Automove:
                     self.log("Found match for '{}' in '{}'".format(mfile, new_path), part="move")
                     if self._copy(mfile, new_path):
                         self._delete(mfile)
-                        self.note.send("Copied '{}' to '{}'".format(mfile, new_path))
+                        self.note.add("Copied '{}' to '{}'".format(mfile, new_path))
+                    else:
+                        self.note.add("Copy failed for '{}'".format(mfile))
             else:
                 if self.conf.note.get('when no tags', False):
-                    self.note.send("No tags for {}".format(mfile))
+                    self.note.add("No tags for '{}'".format(mfile))
 
     def _copy(self, mfile, dst):
         # check if exists
@@ -157,18 +199,38 @@ class Automove:
         if os.path.isfile(dst):
             if self.conf.overwrite:
                 # copy anyway
-                shutil.copyfile(mfile.full_path, dst)
-                self.log("Copied '{}' to '{}' (OVERWROTE)".format(mfile, dst))
+                if self.conf.dry_run:
+                    self.log("DRY RUN: Would overwrite '{}'".format(mfile))
+                else:
+                    shutil.copyfile(mfile.full_path, dst)
+                    if self.conf.verify:
+                        if not self.verifier.verify(mfile.full_path, dst):
+                            self.log("Failed to copy (overwrite) '{}' to '{}'".format(mfile, dst))
+                            return False
+                    self.log("Copied '{}' to '{}' (OVERWROTE)".format(mfile, dst))
             else:
                 self.log("Not overwriting '{}' in '{}'".format(mfile, dst))
                 return False
         else:
-            shutil.copyfile(mfile.full_path, dst)
-            self.log("Copied '{}' to '{}'".format(mfile, dst))
+            if self.conf.dry_run:
+                self.log("DRY RUN: Would copy '{}' to '{}'".format(mfile, dst))
+            else:
+                shutil.copyfile(mfile.full_path, dst)
+                if self.conf.verify:
+                    if not self.verifier.verify(mfile.full_path, dst):
+                        self.log("Failed to copy '{}' to '{}'".format(mfile, dst))
+                        return False
+                self.log("Copied '{}' to '{}'".format(mfile, dst))
         return True
 
     def _delete(self, mfile):
-        self.log("(Not) deleting {}".format(mfile))
+        if self.conf.delete:
+            if self.conf.dry_run:
+                self.log("DRY RUN: would delete '{}'".format(mfile))
+            else:
+                self.log("(Not) deleting '{}'".format(mfile))
+        else:
+            self.log("Not deleteing '{}'".format(mfile))
 
     def get_dest(self, mfile):
         if len(mfile.ftypes) > 1:

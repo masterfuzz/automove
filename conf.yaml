@@ -26,11 +26,15 @@ Databases:
     - local_db
 
 Transfer:
+  dry_run: true
+  make dir: true
   overwrite: false
-  delete: false
+  delete: true
+  verify: true
 
 Notifications:
   when no tags: true
+  summary: true
   module: notify_pb
   module parameters:
     keyring user: ["pushbullet", "cli"]
