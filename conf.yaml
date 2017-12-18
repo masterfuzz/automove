@@ -26,7 +26,7 @@ Databases:
     - local_db
 
 Transfer:
-  dry_run: true
+  dry run: true
   make dir: true
   overwrite: false
   delete: true

@@ -29,7 +29,8 @@ class AutoDB(automove.IAutoDB):
                 self.db[tags[0]].append(x)
                 self.load_tags(os.path.join(path, x), tags[1:])
 
-    def search(self, fname):
+    def search(self, mfile):
+        fname = mfile.fname
         if not self.tags:
             self.log("no tags so no results")
             return None

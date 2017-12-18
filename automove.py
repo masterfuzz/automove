@@ -71,11 +71,13 @@ class Config:
             self.delete = y['Transfer'].get('delete', False)
             self.dry_run = y['Transfer'].get('dry run', False)
             self.verify = y['Transfer'].get('verify', False)
+            self.mkdir = y['Transfer'].get('make dir', False)
         else:
             self.overwrite = False
             self.delete = False
             self.dry_run = False
             self.verify = False
+            self.mkdir = False
 
 
 class Automove:
@@ -111,7 +113,7 @@ class Automove:
             if mfile.ftypes:
                 for t in mfile.ftypes:
                     self.log("Getting tags for {} as {}".format(mfile, t), part="scan")
-                    mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile.fname)
+                    mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile)
             else:
                 self.log("No types for '{}'".format(mfile), part="scan")
 
@@ -168,12 +170,12 @@ class Automove:
         self.log("Notifier plugin '{}' loaded".format(self.note), part="plugins")
 
 
-    def get_tags(self, ftype, fname):
+    def get_tags(self, ftype, mfile):
         tags = []
         if self.dbs[ftype]:
             for d in self.dbs[ftype]:
                 self.log("\tSearching db {}".format(d), part="search")
-                tags.append(d.search(fname))
+                tags.append(d.search(mfile))
         return tags
 
     def move(self, matches):
@@ -195,6 +197,12 @@ class Automove:
         # check if exists
         #if os.path.isdir(dst)
         # TODO create directory!?
+        if not os.path.isdir(dst) and self.conf.mkdir:
+            if self.conf.dry_run:
+                self.log("DRY RUN: Would create directory '{}'".format(dst))
+            else:
+                self.log("Creating directory '{}'".format(dst))
+                os.makedirs(dst)
         dst = os.path.join(dst, mfile.fname)
         if os.path.isfile(dst):
             if self.conf.overwrite:
