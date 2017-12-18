@@ -25,9 +25,13 @@ Databases:
   tv_db:
     - local_db
 
+Transfer:
+  overwrite: false
+  delete: false
+
 Notifications:
   when no tags: true
-  # module: notify_pb
+  module: notify_pb
   module parameters:
     keyring user: ["pushbullet", "cli"]
 

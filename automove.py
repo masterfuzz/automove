@@ -3,6 +3,7 @@ import os
 import magic
 import importlib
 import yaml
+import shutil
 mime = magic.Magic(mime=True)
 
 
@@ -38,6 +39,12 @@ class Config:
         self.dest_dirs = y["Destinations"]
         self.dbs = y["Databases"]
         self.note = y["Notifications"]
+        if 'Transfer' in y:
+            self.overwrite = y['Transfer'].get('overwrite', False)
+            self.delete = y['Transfer'].get('delete', False)
+        else:
+            self.overwrite = False
+            self.delete = False
 
 
 class Automove:
@@ -49,8 +56,12 @@ class Automove:
         self.matches = []
 
     def run(self):
+        self.log("Starting scan")
         self.matches = self._run()
+        self.log("Scan completed")
+        self.log("Starting move")
         self.move(self.matches)
+        self.log("Move completed")
 
     def log(self, message, part=None, level=0):
         if part:
@@ -64,11 +75,14 @@ class Automove:
             res.extend(self.scan_src(d))
 
         for mfile in res:
-            for t in mfile.ftypes:
-                self.log("Getting tags for {} as {}".format(mfile, t))
-                mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile.fname)
+            if mfile.ftypes:
+                for t in mfile.ftypes:
+                    self.log("Getting tags for {} as {}".format(mfile, t), part="scan")
+                    mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile.fname)
+            else:
+                self.log("No types for '{}'".format(mfile), part="scan")
 
-        return res
+        return [r for r in res if r.ftypes]
 
     def scan_src(self, src):
         flist=[]
@@ -118,23 +132,64 @@ class Automove:
         tags = []
         if self.dbs[ftype]:
             for d in self.dbs[ftype]:
-                self.log("\tSearching db {}".format(d))
+                self.log("\tSearching db {}".format(d), part="search")
                 tags.append(d.search(fname))
         return tags
 
     def move(self, matches):
         for mfile in matches:
             if mfile.tags:
-                self.log("{} has tags".format(mfile), part="move")
-
+                new_path = self.get_dest(mfile)
+                if new_path:
+                    self.log("Found match for '{}' in '{}'".format(mfile, new_path), part="move")
+                    if self._copy(mfile, new_path):
+                        self._delete(mfile)
+                        self.note.send("Copied '{}' to '{}'".format(mfile, new_path))
             else:
                 if self.conf.note.get('when no tags', False):
                     self.note.send("No tags for {}".format(mfile))
 
+    def _copy(self, mfile, dst):
+        # check if exists
+        #if os.path.isdir(dst)
+        # TODO create directory!?
+        dst = os.path.join(dst, mfile.fname)
+        if os.path.isfile(dst):
+            if self.conf.overwrite:
+                # copy anyway
+                shutil.copyfile(mfile.full_path, dst)
+                self.log("Copied '{}' to '{}' (OVERWROTE)".format(mfile, dst))
+            else:
+                self.log("Not overwriting '{}' in '{}'".format(mfile, dst))
+                return False
+        else:
+            shutil.copyfile(mfile.full_path, dst)
+            self.log("Copied '{}' to '{}'".format(mfile, dst))
+        return True
+
+    def _delete(self, mfile):
+        self.log("(Not) deleting {}".format(mfile))
+
     def get_dest(self, mfile):
+        if len(mfile.ftypes) > 1:
+            self.log("{} has more than one type".format(mfile), part="move")
+
         ftype = mfile.ftypes[0]
         org_tags = self.conf.dest_dirs[ftype]['org'].split('/')
         path = self.conf.dest_dirs[ftype]['path']
+
+        # find each part of org to assemble path
+        # list of {tag name: {name: hits}}
+        # [{'series': {'Stranger Things': 2}}]
+        for o in org_tags:
+            org_matches = [x[o].keys()[0] for x in mfile.tags if o in x]
+            if len(org_matches) == 1:
+                path = os.path.join(path, org_matches[0])
+                self.log("Found {} match for '{}' as '{}'".format(o, mfile, org_matches[0]), part="move")
+            else:
+                self.log("Too many matches for '{}' for '{}'".format(o, mfile), part="move")
+                return None
+        return path
 
 
 
@@ -142,9 +197,11 @@ class Automove:
 
 
 class MediaFile:
-    def __init__(self, fname, ftypes=None, tags=None):
+    def __init__(self, fname, ftypes=None, tags=None, mime=None):
+        self.full_path = fname
         self.path, self.fname = os.path.split(fname)
         self.ftypes = ftypes if ftypes else []
+        self.mime = mime
         self.tags = tags if tags else []
 
     def __str__(self):

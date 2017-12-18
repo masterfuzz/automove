@@ -21,7 +21,7 @@ class AutoDB(automove.IAutoDB):
     def load_tags(self, path, tags):
         if not tags:
             return
-        self.log("Loading {}".format(path))
+        self.log("Loading path '{}'".format(path))
 
         for x in os.listdir(path):
             if os.path.isdir(os.path.join(path,x)):
@@ -35,7 +35,6 @@ class AutoDB(automove.IAutoDB):
             return None
         ret = {x: {} for x in self.tags}
         tokens = self.tokenize(fname)
-        self.log("tokens: {}".format(tokens))
         for tag in self.tags:
             for name in self.db[tag]:
                 score = 0
@@ -44,7 +43,6 @@ class AutoDB(automove.IAutoDB):
                         #print("hit {}".format(t))
                         score += 1
                 if score > 0:
-                    self.log("HITx{} {}/{}".format(score, tag, name))
                     ret[tag][name] = score
         return ret
 
