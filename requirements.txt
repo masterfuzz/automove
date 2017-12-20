@@ -1,3 +1,4 @@
 progressbar2==3.34.2
 eyeD3
 pushbullet.py
+pyyaml
