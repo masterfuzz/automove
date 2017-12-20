@@ -1,0 +1,25 @@
+Sources:
+  - test/src
+
+Destinations:
+  TEST:
+    db: local_db
+    path: test/dest
+    file type: null
+    org: level1
+
+Databases:
+  local_db:
+    - local_db
+
+Transfer:
+  dry run: false
+  make dir: true
+  overwrite: false
+  delete: true
+  verify: true
+
+Notifications:
+  when no tags: true
+  summary: false
+
