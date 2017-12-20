@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/masterfuzz/automove.svg?branch=master)](https://travis-ci.org/masterfuzz/automove)
+
 Automove
 ========
 
@@ -7,7 +9,7 @@ Organizes files in a directory structure based on 'tags' from a database lookup.
 Behaviour is configured by the default configuration file, or one specified on the command line with `automove -c conf.yaml`
 
 The lookup order for configuration is as follows:
-`$XDG_CONFIG_HOME/automove/conf.yaml`, `$HOME/.config/automove/conf.yaml`, `./automove.yaml`, `/etc/automove/conf.yaml`
+`./automove.yaml`, `$XDG_CONFIG_HOME/automove/conf.yaml`, `$HOME/.config/automove/conf.yaml`, `/etc/automove/conf.yaml`
 
 ### Example Configuration
 ```yaml
