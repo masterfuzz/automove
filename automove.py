@@ -2,8 +2,9 @@
 import os
 import magic
 import importlib
-import yaml
 import shutil
+import progressbar
+from config import Config
 mime = magic.Magic(mime=True)
 
 
@@ -23,6 +24,7 @@ class IAutoVerify(object):
     def verify(self, a, b):
         if os.path.getsize(a) != os.path.getsize(b):
             return False
+        return True
         if os.system("cmp '{}' '{}'".format(a,b)) != 0:
             return False
         return True
@@ -56,33 +58,11 @@ class IAutoNotify(object):
         print("[{}] {}".format(self, message))
 
 
-class Config:
-    def __init__(self, conf_file):
-        with open(conf_file) as f:
-            y = yaml.load(f)
-
-        self.raw_conf = y
-        self.src_dirs = y["Sources"]
-        self.dest_dirs = y["Destinations"]
-        self.dbs = y["Databases"]
-        self.note = y["Notifications"]
-        if 'Transfer' in y:
-            self.overwrite = y['Transfer'].get('overwrite', False)
-            self.delete = y['Transfer'].get('delete', False)
-            self.dry_run = y['Transfer'].get('dry run', False)
-            self.verify = y['Transfer'].get('verify', False)
-            self.mkdir = y['Transfer'].get('make dir', False)
-        else:
-            self.overwrite = False
-            self.delete = False
-            self.dry_run = False
-            self.verify = False
-            self.mkdir = False
 
 
 class Automove:
-    def __init__(self, conf_file):
-        self.conf = Config(conf_file)
+    def __init__(self, conf):
+        self.conf = conf
         self.dbs = {}
         self._load_dbs()
         self._load_notifier()
@@ -120,11 +100,18 @@ class Automove:
         return [r for r in res if r.ftypes]
 
     def scan_src(self, src):
+        self.log("Scanning '{}'...".format(src), part="scan")
         flist=[]
         for (dirpath, dirnames, filenames) in os.walk(src):
             flist.extend(map(lambda x: os.path.join(dirpath,x), filenames))
 
-        return [MediaFile(f, ftypes=self.ftype_match(f)) for f in flist]
+        self.log("Getting file types for {} files...".format(len(flist)), part="scan")
+        mlist = []
+        bar = progressbar.ProgressBar()
+        for f in bar(flist):
+            mlist.append(MediaFile(f, ftypes=self.ftype_match(f)))
+
+        return mlist
 
     def get_file_type(self, fname):
         return magic.from_file(fname).lower() + " " + mime.from_file(fname).lower()
@@ -277,8 +264,10 @@ class MediaFile:
     def __str__(self):
         return self.fname
 
+def cli():
+    am = Automove(Config(get_args=True))
+    am.run()
 
 if __name__ == "__main__":
-    am = Automove("conf.yaml")
-    am.run()
+    cli()
 
