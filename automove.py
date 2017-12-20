@@ -119,7 +119,9 @@ class Automove:
     def ftype_match(self, fname):
         matches = []
         for d in self.conf.dest_dirs:
-            if self.conf.dest_dirs[d]['file type'] in self.get_file_type(fname):
+            if self.conf.dest_dirs[d]['file type'] is None:
+                matches.append(d)
+            elif self.conf.dest_dirs[d]['file type'] in self.get_file_type(fname):
                 matches.append(d)
         return matches
 
@@ -239,7 +241,7 @@ class Automove:
         # list of {tag name: {name: hits}}
         # [{'series': {'Stranger Things': 2}}]
         for o in org_tags:
-            org_matches = [x[o].keys()[0] for x in mfile.tags if o in x]
+            org_matches = [x[o].keys()[0] for x in mfile.tags if x[o] and o in x]
             if len(org_matches) == 1:
                 path = os.path.join(path, org_matches[0])
                 self.log("Found {} match for '{}' as '{}'".format(o, mfile, org_matches[0]), part="move")
