@@ -5,6 +5,7 @@ import importlib
 import shutil
 import progressbar
 from config import Config
+
 mime = magic.Magic(mime=True)
 
 
@@ -12,20 +13,23 @@ class IAutoDB(object):
     def __init__(self, conf, dest=None):
         self.dest = dest
         self.conf = conf
+
     def __str__(self):
         return "AutoDB"
+
     def log(self, message, level=0):
         print("[{}] {}".format(self, message))
+
 
 class IAutoVerify(object):
     def __init__(self, conf):
         self.conf = conf
-    
+
     def verify(self, a, b):
         if os.path.getsize(a) != os.path.getsize(b):
             return False
         return True
-        if os.system("cmp '{}' '{}'".format(a,b)) != 0:
+        if os.system("cmp '{}' '{}'".format(a, b)) != 0:
             return False
         return True
 
@@ -33,7 +37,7 @@ class IAutoVerify(object):
 class IAutoNotify(object):
     def __init__(self, conf):
         self.conf = conf
-        self.params = conf.note.get('module parameters', {})
+        self.params = conf.note.get("module parameters", {})
         self.message = []
 
     def send(self, body, title=None):
@@ -41,7 +45,7 @@ class IAutoNotify(object):
 
     def send_all(self, title=None):
         if self.message:
-            if self.conf.note.get('summary', True):
+            if self.conf.note.get("summary", True):
                 self.send("\n".join(self.message), title=title)
             else:
                 for m in self.message:
@@ -54,10 +58,9 @@ class IAutoNotify(object):
 
     def __str__(self):
         return "IAutoNotify<stdout>"
+
     def log(self, message, level=0):
         print("[{}] {}".format(self, message))
-
-
 
 
 class Automove:
@@ -93,7 +96,7 @@ class Automove:
             if mfile.ftypes:
                 for t in mfile.ftypes:
                     self.log("Getting tags for {} as {}".format(mfile, t), part="scan")
-                    mfile.tags += self.get_tags(self.conf.dest_dirs[t]['db'], mfile)
+                    mfile.tags += self.get_tags(self.conf.dest_dirs[t]["db"], mfile)
             else:
                 self.log("No types for '{}'".format(mfile), part="scan")
 
@@ -101,9 +104,9 @@ class Automove:
 
     def scan_src(self, src):
         self.log("Scanning '{}'...".format(src), part="scan")
-        flist=[]
+        flist = []
         for (dirpath, dirnames, filenames) in os.walk(src):
-            flist.extend(map(lambda x: os.path.join(dirpath,x), filenames))
+            flist.extend(map(lambda x: os.path.join(dirpath, x), filenames))
 
         self.log("Getting file types for {} files...".format(len(flist)), part="scan")
         mlist = []
@@ -119,9 +122,9 @@ class Automove:
     def ftype_match(self, fname):
         matches = []
         for d in self.conf.dest_dirs:
-            if self.conf.dest_dirs[d]['file type'] is None:
+            if self.conf.dest_dirs[d]["file type"] is None:
                 matches.append(d)
-            elif self.conf.dest_dirs[d]['file type'] in self.get_file_type(fname):
+            elif self.conf.dest_dirs[d]["file type"] in self.get_file_type(fname):
                 matches.append(d)
         return matches
 
@@ -135,21 +138,24 @@ class Automove:
     def _load_dbs(self):
         for dest in self.conf.dest_dirs:
             loaded_dbs = []
-            dlist = self.conf.dest_dirs[dest]['db']
+            dlist = self.conf.dest_dirs[dest]["db"]
             for db in self.conf.dbs[dlist]:
                 try:
                     mod = importlib.import_module(db)
                     loaded_dbs.append(mod.AutoDB(self.conf, dest))
-                    self.log("Database plugin '{}' loaded".format(loaded_dbs[-1]), part="plugins")
+                    self.log(
+                        "Database plugin '{}' loaded".format(loaded_dbs[-1]),
+                        part="plugins",
+                    )
                 except Exception as e:
                     self.log(e)
                     raise e
             self.dbs[dlist] = loaded_dbs
 
     def _load_notifier(self):
-        if self.conf.note and self.conf.note.get('module'):
+        if self.conf.note and self.conf.note.get("module"):
             try:
-                mod = importlib.import_module(self.conf.note['module'])
+                mod = importlib.import_module(self.conf.note["module"])
                 self.note = mod.AutoNotify(self.conf)
             except Exception as e:
                 self.log(e)
@@ -157,7 +163,6 @@ class Automove:
         else:
             self.note = IAutoNotify(self.conf)
         self.log("Notifier plugin '{}' loaded".format(self.note), part="plugins")
-
 
     def get_tags(self, ftype, mfile):
         tags = []
@@ -172,19 +177,22 @@ class Automove:
             if mfile.tags:
                 new_path = self.get_dest(mfile)
                 if new_path:
-                    self.log("Found match for '{}' in '{}'".format(mfile, new_path), part="move")
+                    self.log(
+                        "Found match for '{}' in '{}'".format(mfile, new_path),
+                        part="move",
+                    )
                     if self._copy(mfile, new_path):
                         self._delete(mfile)
                         self.note.add("Copied '{}' to '{}'".format(mfile, new_path))
                     else:
                         self.note.add("Copy failed for '{}'".format(mfile))
             else:
-                if self.conf.note.get('when no tags', False):
+                if self.conf.note.get("when no tags", False):
                     self.note.add("No tags for '{}'".format(mfile))
 
     def _copy(self, mfile, dst):
         # check if exists
-        #if os.path.isdir(dst)
+        # if os.path.isdir(dst)
         # TODO create directory!?
         if not os.path.isdir(dst) and self.conf.mkdir:
             if self.conf.dry_run:
@@ -202,7 +210,11 @@ class Automove:
                     shutil.copyfile(mfile.full_path, dst)
                     if self.conf.verify:
                         if not self.verifier.verify(mfile.full_path, dst):
-                            self.log("Failed to copy (overwrite) '{}' to '{}'".format(mfile, dst))
+                            self.log(
+                                "Failed to copy (overwrite) '{}' to '{}'".format(
+                                    mfile, dst
+                                )
+                            )
                             return False
                     self.log("Copied '{}' to '{}' (OVERWROTE)".format(mfile, dst))
             else:
@@ -234,8 +246,8 @@ class Automove:
             self.log("{} has more than one type".format(mfile), part="move")
 
         ftype = mfile.ftypes[0]
-        org_tags = self.conf.dest_dirs[ftype]['org'].split('/')
-        path = self.conf.dest_dirs[ftype]['path']
+        org_tags = self.conf.dest_dirs[ftype]["org"].split("/")
+        path = self.conf.dest_dirs[ftype]["path"]
 
         # find each part of org to assemble path
         # list of {tag name: {name: hits}}
@@ -244,15 +256,16 @@ class Automove:
             org_matches = [x[o].keys()[0] for x in mfile.tags if x[o] and o in x]
             if len(org_matches) == 1:
                 path = os.path.join(path, org_matches[0])
-                self.log("Found {} match for '{}' as '{}'".format(o, mfile, org_matches[0]), part="move")
+                self.log(
+                    "Found {} match for '{}' as '{}'".format(o, mfile, org_matches[0]),
+                    part="move",
+                )
             else:
-                self.log("Too many matches for '{}' for '{}'".format(o, mfile), part="move")
+                self.log(
+                    "Too many matches for '{}' for '{}'".format(o, mfile), part="move"
+                )
                 return None
         return path
-
-
-
-
 
 
 class MediaFile:
@@ -266,10 +279,11 @@ class MediaFile:
     def __str__(self):
         return self.fname
 
+
 def cli():
     am = Automove(Config(get_args=True))
     am.run()
 
+
 if __name__ == "__main__":
     cli()
-

@@ -1,4 +1,3 @@
-
 import automove
 import eyed3
 
@@ -16,11 +15,7 @@ class AutoDB(automove.IAutoDB):
             print(e)
             return []
 
-        return {'artist': {artist: 1}, 'album': {album: 1}, 'title': {title: 1}}
+        return {"artist": {artist: 1}, "album": {album: 1}, "title": {title: 1}}
 
     def __str__(self):
         return "MusicDB"
-
-
-
-

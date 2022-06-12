@@ -6,25 +6,25 @@ import re
 class AutoDB(automove.IAutoDB):
     def __init__(self, conf, dest=None):
         super(AutoDB, self).__init__(conf, dest)
-        
+
         if dest:
-            org = conf.dest_dirs[dest]['org']
+            org = conf.dest_dirs[dest]["org"]
             if org:
-                path = conf.dest_dirs[dest]['path']
-                self.tags = org.split('/')
+                path = conf.dest_dirs[dest]["path"]
+                self.tags = org.split("/")
                 self.db = {}
                 for t in self.tags:
                     self.db[t] = []
 
                 self.load_tags(path, self.tags)
-            
+
     def load_tags(self, path, tags):
         if not tags:
             return
         self.log("Loading path '{}'".format(path))
 
         for x in os.listdir(path):
-            if os.path.isdir(os.path.join(path,x)):
+            if os.path.isdir(os.path.join(path, x)):
                 self.log("added {}: '{}'".format(tags[0], x))
                 self.db[tags[0]].append(x)
                 self.load_tags(os.path.join(path, x), tags[1:])
@@ -41,14 +41,14 @@ class AutoDB(automove.IAutoDB):
                 score = 0
                 for t in tokens:
                     if t in name.lower():
-                        #print("hit {}".format(t))
+                        # print("hit {}".format(t))
                         score += 1
                 if score > 0:
                     ret[tag][name] = score
         return ret
 
     def tokenize(self, name):
-        return [t for t in re.split('[^a-zA-Z0-9]', name.lower()) if t]
+        return [t for t in re.split("[^a-zA-Z0-9]", name.lower()) if t]
 
     def __str__(self):
         if self.dest:
@@ -57,7 +57,5 @@ class AutoDB(automove.IAutoDB):
             return "LocalDB<NULL>"
 
 
-
-#ldb = AutoDB(automove.Config("conf.yaml"), dest='TV')
-#mdb = AutoDB(automove.Config("conf.yaml"), dest='MUSIC')
-
+# ldb = AutoDB(automove.Config("conf.yaml"), dest='TV')
+# mdb = AutoDB(automove.Config("conf.yaml"), dest='MUSIC')
