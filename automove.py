@@ -5,62 +5,9 @@ import importlib
 import shutil
 import progressbar
 from config import Config
+from base import IAutoNotify, MediaFile, IAutoVerify
 
-mime = magic.Magic(mime=True)
-
-
-class IAutoDB(object):
-    def __init__(self, conf, dest=None):
-        self.dest = dest
-        self.conf = conf
-
-    def __str__(self):
-        return "AutoDB"
-
-    def log(self, message, level=0):
-        print("[{}] {}".format(self, message))
-
-
-class IAutoVerify(object):
-    def __init__(self, conf):
-        self.conf = conf
-
-    def verify(self, a, b):
-        if os.path.getsize(a) != os.path.getsize(b):
-            return False
-        return True
-        if os.system("cmp '{}' '{}'".format(a, b)) != 0:
-            return False
-        return True
-
-
-class IAutoNotify(object):
-    def __init__(self, conf):
-        self.conf = conf
-        self.params = conf.note.get("module parameters", {})
-        self.message = []
-
-    def send(self, body, title=None):
-        self.log("send(body='{}', title='{}'".format(self, body, title))
-
-    def send_all(self, title=None):
-        if self.message:
-            if self.conf.note.get("summary", True):
-                self.send("\n".join(self.message), title=title)
-            else:
-                for m in self.message:
-                    self.send(m, title=title)
-        else:
-            self.log("send_all: empty message")
-
-    def add(self, message):
-        self.message.append(message)
-
-    def __str__(self):
-        return "IAutoNotify<stdout>"
-
-    def log(self, message, level=0):
-        print("[{}] {}".format(self, message))
+MIME = magic.Magic(mime=True)
 
 
 class Automove:
@@ -83,9 +30,9 @@ class Automove:
 
     def log(self, message, part=None, level=0):
         if part:
-            print("[main.{}] {}".format(part, message))
+            print(f"[main.{part}] {message}")
         else:
-            print("[main] {}".format(message))
+            print(f"[main] {message}")
 
     def _run(self):
         res = []
@@ -105,7 +52,7 @@ class Automove:
     def scan_src(self, src):
         self.log("Scanning '{}'...".format(src), part="scan")
         flist = []
-        for (dirpath, dirnames, filenames) in os.walk(src):
+        for (dirpath, _, filenames) in os.walk(src):
             flist.extend(map(lambda x: os.path.join(dirpath, x), filenames))
 
         self.log("Getting file types for {} files...".format(len(flist)), part="scan")
@@ -117,7 +64,7 @@ class Automove:
         return mlist
 
     def get_file_type(self, fname):
-        return magic.from_file(fname).lower() + " " + mime.from_file(fname).lower()
+        return magic.from_file(fname).lower() + " " + MIME.from_file(fname).lower()
 
     def ftype_match(self, fname):
         matches = []
@@ -241,19 +188,19 @@ class Automove:
         else:
             self.log("Not deleteing '{}'".format(mfile))
 
-    def get_dest(self, mfile):
+    def get_dest(self, mfile: MediaFile):
         if len(mfile.ftypes) > 1:
             self.log("{} has more than one type".format(mfile), part="move")
 
         ftype = mfile.ftypes[0]
-        org_tags = self.conf.dest_dirs[ftype]["org"].split("/")
+        org_tags = self.conf.dest_dirs[ftype]["org"]
         path = self.conf.dest_dirs[ftype]["path"]
 
         # find each part of org to assemble path
         # list of {tag name: {name: hits}}
         # [{'series': {'Stranger Things': 2}}]
         for o in org_tags:
-            org_matches = [x[o].keys()[0] for x in mfile.tags if x[o] and o in x]
+            org_matches = [list(x[o].keys())[0] for x in mfile.tags if x[o] and o in x]
             if len(org_matches) == 1:
                 path = os.path.join(path, org_matches[0])
                 self.log(
@@ -266,18 +213,6 @@ class Automove:
                 )
                 return None
         return path
-
-
-class MediaFile:
-    def __init__(self, fname, ftypes=None, tags=None, mime=None):
-        self.full_path = fname
-        self.path, self.fname = os.path.split(fname)
-        self.ftypes = ftypes if ftypes else []
-        self.mime = mime
-        self.tags = tags if tags else []
-
-    def __str__(self):
-        return self.fname
 
 
 def cli():

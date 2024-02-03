@@ -1,8 +1,8 @@
-import automove
+import base
 import eyed3
 
 
-class AutoDB(automove.IAutoDB):
+class AutoDB(base.IAutoDB):
     def search(self, mfile):
         # first check eyed3
         try:

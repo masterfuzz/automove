@@ -1,8 +1,8 @@
-import automove
+import base
 import pushbullet
 
 
-class AutoNotify(automove.IAutoNotify):
+class AutoNotify(base.IAutoNotify):
     def __init__(self, conf):
         super(AutoNotify, self).__init__(conf)
 

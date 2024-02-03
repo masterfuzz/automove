@@ -1,9 +1,9 @@
-import automove
+import base
 import os
 import re
 
 
-class AutoDB(automove.IAutoDB):
+class AutoDB(base.IAutoDB):
     def __init__(self, conf, dest=None):
         super(AutoDB, self).__init__(conf, dest)
 
@@ -11,7 +11,7 @@ class AutoDB(automove.IAutoDB):
             org = conf.dest_dirs[dest]["org"]
             if org:
                 path = conf.dest_dirs[dest]["path"]
-                self.tags = org.split("/")
+                self.tags = org
                 self.db = {}
                 for t in self.tags:
                     self.db[t] = []
@@ -41,14 +41,14 @@ class AutoDB(automove.IAutoDB):
                 score = 0
                 for t in tokens:
                     if t in name.lower():
-                        # print("hit {}".format(t))
+                        print("hit {}".format(t))
                         score += 1
                 if score > 0:
                     ret[tag][name] = score
         return ret
 
     def tokenize(self, name):
-        return [t for t in re.split("[^a-zA-Z0-9]", name.lower()) if t]
+        return [t for t in re.split("[^a-zA-Z0-9_-]", name.lower()) if t]
 
     def __str__(self):
         if self.dest:

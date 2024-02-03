@@ -7,6 +7,9 @@ authors = ["Robert Martens <master.fuzz@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.10"
 progressbar2 = "^4.0.0"
+eyeD3 = "^0.9.6"
+python-magic = "^0.4.27"
+PyYAML = "^6.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

@@ -1,22 +1,23 @@
 Sources:
--  /var/lib/deluged/Completed
+-  /srv/deluge/Completed
+-  /srv/deluge/Downloads
 
 Destinations:
-  MOVIES:
-    db:  movie_db
-    path:  /mnt/usb/Videos
-    file type:  video
-    org: null
+  # MOVIES:
+  #   db:  movie_db
+  #   path:  /home/bob/backup/zbig/movies
+  #   file type:  video
+  #   org: []
   MUSIC:
     db:  music_db
-    path:  /mnt/usb/Music
+    path:  /home/bob/backup/zbig/music
     file type:  audio
-    org:  artist/album
+    org: [artist, album]
   TV:
     db:  tv_db
-    path:  /mnt/usb/TV
+    path:  /home/bob/backup/zbig/tv
     file type:  video
-    org:  series
+    org:  [series]
 
 Databases:
   movie_db: []
@@ -29,15 +30,14 @@ Transfer:
   dry run: false
   make dir: true
   overwrite: false
-  delete: true
+  delete: false
   verify: true
 
 Notifications:
   when no tags: true
   summary: false
   #module: notify_pb
-  module parameters:
-    keyring user: ["pushbullet", "cli"]
+  # module parameters: keyring user: ["pushbullet", "cli"]
 
 Queue:
   path: ./queue.pic
